@@ -22,9 +22,9 @@ i = 0
 for x in conns:
     #print(datetime.fromtimestamp(x['time'], tzinfo=tz).strftime('%H:%M:%S') + '\t' +  x['name']['normal'] + "\t" + x['direction']['normal'])
     if x['delay']/60 > 0:
-        print(x['time'] + '\t' +  x['name']['normal'] + "\t" + x['direction']['normal'] + "\t + " + "{:.0f}".format(x['delay']/60))
+        print(x['time'] + " + " + "{:.0f}".format(x['delay']/60) + '\t' +  x['name']['normal'] + "\t" + x['direction']['normal'])
     else:
-        print(x['time'] + '\t' +  x['name']['normal'] + "\t" + x['direction']['normal'])
+        print(x['time'] + '\t\t' +  x['name']['normal'] + "\t" + x['direction']['normal'])
     if i > 20: break
     i += 1
 
