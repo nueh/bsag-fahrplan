@@ -22,7 +22,7 @@ res,conns = h.get_stboard(query=options['-q'])
 
 #tz = pytz.timezone('Europe/Berlin')
 
-data = json.dumps({ 'info' : res, 'connections': conns }, sort_keys=True,
+data = json.dumps({ 'info' : res, 'connections': conns }, ensure_ascii=False, sort_keys=True,
                   indent=4, separators=(',', ': '))
 
 print("Writing to file " + options['-f'])
