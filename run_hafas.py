@@ -12,7 +12,7 @@ for key,val in optlist:
     options[key] = val
 
 if not '-q' in options:
-    options['-q'] = "DA Willy-Brand-Platz"
+    options['-q'] = "HB Kurfürstenallee"
 if not '-f' in options:
     print ("Missing target file name param '-f'")
     exit(1)

@@ -9,11 +9,11 @@ from lxml import etree
 
 
 class HAFASProvider:
-    __base_uri = 'https://www.rmv.de/auskunft/bin/jp/'
+    __base_uri = 'https://fahrplaner.vbn.de/bin/'
 
     __query_path = 'query.exe/'
     __getstop_path = 'ajax-getstop.exe/'
-    __stboard_path = 'stboard.exe/'  # DTD http://www.rmv.de/xml/hafasXMLStationBoard.dtd
+    __stboard_path = 'stboard.exe/'  # DTD http://fahrplaner.vbn.de/xml/hafasXMLStationBoard.dtd
 
     __lang = 'd'
     __type = 'n'
