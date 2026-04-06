@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Abfahrten – Arensburgstraße &amp; Kurfürstenallee</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #ffffff;
+            color: #1a1a1a;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 1.2rem;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+            flex-shrink: 0;
+        }
+
+        header h1 {
+            font-size: 0.9rem;
+            color: #888;
+            font-weight: normal;
+            letter-spacing: 0.05em;
+        }
+
+        #clock {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #111;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.05em;
+        }
+
+        /* Haupt-Grid: 2 Stationen übereinander (Hochformat) */
+        .grid {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .station-block {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .station-block:last-child {
+            border-bottom: none;
+        }
+
+        .station-header {
+            background: #eeeeee;
+            padding: 0.4rem 1.2rem;
+            font-size: 1.05rem;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            letter-spacing: 0.02em;
+            flex-shrink: 0;
+        }
+
+        /* Richtungs-Grid: 2 Richtungen nebeneinander innerhalb jeder Station */
+        .directions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .direction-section {
+            padding: 0.6rem 1.0rem;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e8e8e8;
+        }
+
+        .direction-section:last-child {
+            border-right: none;
+        }
+
+        .direction-dest {
+            color: #555;
+            font-size: 0.82rem;
+            font-weight: bold;
+            margin-bottom: 0.45rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
+        }
+
+        .departure-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            padding: 0.2rem 0;
+            flex-shrink: 0;
+        }
+
+        .dep-time {
+            font-size: 1.55rem;
+            font-weight: bold;
+            min-width: 4.0rem;
+            font-variant-numeric: tabular-nums;
+            color: #111;
+            line-height: 1.1;
+        }
+
+        .dep-delay {
+            color: #cc0000;
+            font-size: 0.8rem;
+            min-width: 2.6rem;
+            font-weight: bold;
+        }
+
+        .dep-line {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            min-width: 2.2rem;
+            text-align: center;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .dep-dest {
+            font-size: 0.9rem;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .no-data {
+            color: #aaa;
+            font-style: italic;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .error-msg {
+            color: #c0392b;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Abfahrten</h1>
+        <span id="clock">--:--:--</span>
+    </header>
+    <div class="grid">
+        <div class="station-block">
+            <div class="station-header" id="title-arensburg">Arensburgstraße</div>
+            <div class="directions-grid">
+                <div class="direction-section" id="arensburg-dir0"></div>
+                <div class="direction-section" id="arensburg-dir1"></div>
+            </div>
+        </div>
+        <div class="station-block">
+            <div class="station-header" id="title-kurfuerst">Kurfürstenallee</div>
+            <div class="directions-grid">
+                <div class="direction-section" id="kurfuerst-dir0"></div>
+                <div class="direction-section" id="kurfuerst-dir1"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var MAX_DIRS = 2;
+        var MAX_DEPS = 3;
+
+        function getLineColor(category) {
+            if (category === 'Tram') return '#EB6810';
+            if (category === 'Bus') return '#A3047A';
+            return '#555555';
+        }
+
+        function groupByDirection(connections) {
+            var dirMap = {};
+            var dirOrder = [];
+            for (var i = 0; i < connections.length; i++) {
+                var conn = connections[i];
+                var dir = conn.direction.normal;
+                if (!dirMap[dir]) {
+                    dirMap[dir] = [];
+                    dirOrder.push(dir);
+                }
+                if (dirMap[dir].length < MAX_DEPS) {
+                    dirMap[dir].push(conn);
+                }
+                if (dirOrder.length >= MAX_DIRS) {
+                    var full = true;
+                    for (var d = 0; d < dirOrder.length; d++) {
+                        if (dirMap[dirOrder[d]].length < MAX_DEPS) { full = false; break; }
+                    }
+                    if (full) break;
+                }
+            }
+            return dirOrder.slice(0, MAX_DIRS).map(function(dir) {
+                return { direction: dir, deps: dirMap[dir] };
+            });
+        }
+
+        function renderDirection(containerId, dirData) {
+            var el = document.getElementById(containerId);
+            if (!dirData || dirData.deps.length === 0) {
+                el.innerHTML = '<div class="no-data">Keine Abfahrten</div>';
+                return;
+            }
+
+            var html = '<div class="direction-dest">\u2192 ' + dirData.direction + '</div>';
+
+            for (var i = 0; i < dirData.deps.length; i++) {
+                var d = dirData.deps[i];
+                var delay = '';
+                if (d.delay > 0) {
+                    delay = '<span class="dep-delay">+' + Math.round(d.delay / 60) + '&thinsp;min</span>';
+                } else {
+                    delay = '<span class="dep-delay"></span>';
+                }
+                var category = (d.category && d.category.normal) ? d.category.normal : '';
+                var color = getLineColor(category);
+                var name = (d.name && d.name.normal) ? d.name.normal : '?';
+                html += '<div class="departure-row">' +
+                    '<span class="dep-time">' + d.time + '</span>' +
+                    delay +
+                    '<span class="dep-line" style="background:' + color + '">' + name + '</span>' +
+                    '<span class="dep-dest">' + d.direction.normal + '</span>' +
+                    '</div>';
+            }
+            el.innerHTML = html;
+        }
+
+        function updateStation(jsonFile, prefix, titleId) {
+            var req = new XMLHttpRequest();
+            req.onload = function() {
+                try {
+                    var data = JSON.parse(req.responseText);
+                    if (titleId && data.info && data.info.name) {
+                        document.getElementById(titleId).textContent = data.info.name;
+                    }
+                    var groups = groupByDirection(data.connections);
+                    renderDirection(prefix + '-dir0', groups[0]);
+                    renderDirection(prefix + '-dir1', groups[1]);
+                } catch (e) {
+                    document.getElementById(prefix + '-dir0').innerHTML = '<div class="error-msg">Fehler beim Verarbeiten der Daten</div>';
+                    document.getElementById(prefix + '-dir1').innerHTML = '';
+                }
+            };
+            req.onerror = function() {
+                document.getElementById(prefix + '-dir0').innerHTML = '<div class="error-msg">Datei nicht erreichbar<br><small>' + jsonFile + '</small></div>';
+                document.getElementById(prefix + '-dir1').innerHTML = '';
+            };
+            req.open('GET', '/' + jsonFile + '?_=' + Date.now());
+            req.send();
+        }
+
+        function updateAll() {
+            updateStation('arensburg.json', 'arensburg', 'title-arensburg');
+            updateStation('kurfuerst.json', 'kurfuerst', 'title-kurfuerst');
+        }
+
+        function fmt(n) { return n < 10 ? '0' + n : String(n); }
+
+        setInterval(function() {
+            var d = new Date();
+            document.getElementById('clock').textContent =
+                fmt(d.getHours()) + ':' + fmt(d.getMinutes()) + ':' + fmt(d.getSeconds());
+        }, 1000);
+
+        updateAll();
+        setInterval(updateAll, 60000);
+    </script>
+</body>
+</html>
