@@ -5,5 +5,5 @@
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
-python3 "$DIR/run_hafas.py" -q "Arensburgstraße" -f "$DIR/arensburg.json"
+python3 "$DIR/run_hafas.py" -q "HB Arensburgstraße" -f "$DIR/arensburg.json"
 python3 "$DIR/run_hafas.py" -q "HB Kurfürstenallee" -f "$DIR/kurfuerst.json"
